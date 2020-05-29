@@ -9,6 +9,8 @@ import xlsxwriter
 import re
 from copy import deepcopy
 import pandas as pd
+import tkinter
+from tkinter import ttk
 
 
 def getIcebergBugList(info):
@@ -369,6 +371,8 @@ def merge_Excel():
             c = datetable[a][b]
             wsdata.write(a + 1, b, c, style1)
     # --------2、生成图表并插入到excel---------------
+
+
     # 创建一个折线图(line chart)
     chart_col = wb1.add_chart({'type': 'line'})
     # 配置第一个系列数据
@@ -401,6 +405,9 @@ def merge_Excel():
         bugcol = len(datetable) + 1 - 10
     else:
         bugcol = 0
+
+
+
     # 创建一个柱形图(column chart)
     chart_column = wb1.add_chart({'type': 'column'})
     # 配置第一个系列数据
@@ -415,6 +422,9 @@ def merge_Excel():
     chart_column.set_size({'width': 550, 'height': 350})
     # 把图表插入到worksheet并设置偏移
     wsdata.insert_chart('K19', chart_column)
+
+
+
 
     # 创建一个扇形图(column chart)
     chart_pie = wb1.add_chart({'type': 'pie'})
@@ -464,17 +474,54 @@ def merge_Excel():
     Result = cmddoing.stdout.read()
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def regular():
-    string = ['iceberg', 'ROMDEVTEST']
-    for xlsfile in os.listdir(os.getcwd()):
-        if '.xls' in xlsfile:
-            if xlsfile != 'backup.xlsx':
-                os.remove(os.path.join(os.getcwd(), xlsfile))
-    for info in string:
-        if not getIcebergBugList(info):
-            input('从服务器获取{}数据失败,请联系管理员,按任意键退出'.format(info))
-            exit()
-    time.sleep(5)
+    # string = ['iceberg', 'ROMDEVTEST']
+    # for xlsfile in os.listdir(os.getcwd()):
+    #     if '.xls' in xlsfile:
+    #         if xlsfile != 'backup.xlsx':
+    #             os.remove(os.path.join(os.getcwd(), xlsfile))
+    # for info in string:
+    #     if not getIcebergBugList(info):
+    #         input('从服务器获取{}数据失败,请联系管理员,按任意键退出'.format(info))
+    #         exit()
+    # time.sleep(5)
     merge_Excel()
 
 
@@ -483,42 +530,26 @@ def regular():
 # this_date = datetime.datetime.strptime(re.findall(r'B*(\d+)-', c)[0], "%y%m%d")
 # year, week, day = this_date.isocalendar()
 def customBug(startyear, startmonth, endyear, endmonth):
-    startime=str(startyear)+str(startmonth)
-    endtime=str(endyear)+str(endmonth)
+    startime = str(startyear) + str(startmonth)
+    endtime = str(endyear) + str(endmonth)
     backupath = os.getcwd() + '\\backup.xlsx'
     backexcel = xlrd.open_workbook(backupath)
     table = backexcel.sheets()[0]
     finalrowdata = table.row_values(-1)
     this_date = datetime.datetime.strptime(re.findall(r'B*(\d+)-', finalrowdata[0])[0], "%y%m%d")
     year, week, day = this_date.isocalendar()
-    date = this_date.strftime("%Y-%m-%d") #2020-05-20
-    finalyear =year
-    finalmonth =date.split('-')[1]
-    # 触发更新
+    date = this_date.strftime("%Y-%m-%d")  # 2020-05-20
+    finalyear = year
+    finalmonth = date.split('-')[1]
+
+    # 询问用户是否原因触发更新
     if int(endyear) >= int(finalyear) and int(endmonth) >= int(finalmonth):
         pass
     #     print('执行更新合并筛选操作')
+
     # 不触发更新
     elif int(endyear) <= int(finalyear):
-        print('执行筛选操作')
-        now_date = datetime.datetime.now().strftime('%Y-%m-%d')
-        endfile = os.getcwd() + '\\BugCounter-{}.xlsx'.format(now_date)
-
-        tempbackfile = os.getcwd() + '\\tempbackup.xlsx'.format(now_date)
-        wbback = xlsxwriter.Workbook(tempbackfile)
-        wsback = wbback.add_worksheet('临时BUG数据缓存')
-        wb1 = xlsxwriter.Workbook(endfile)
-        tempalldata = [['issuekey', 'status', 'memo', 'title']]
-        for i in range(1, table.nrows):
-            rowdata=table.row_values(i)
-            bugdate=datetime.datetime.strptime(re.findall(r'B*(\d+)-', rowdata[0])[0], "%y%m%d")
-            bugyear,week,day=bugdate.isocalendar()
-            bugmonth=bugdate.month
-            realbugdate=int(str(bugyear)+str(bugmonth))
-            if realbugdate<=int(endtime) and realbugdate>=int(startime):
-                tempalldata.append(rowdata)
-
-
+        untriggerupdate(startyear, startmonth, endyear, endmonth)
 
     else:
         print('无效输入，请检查日期是否输入正确！')
@@ -526,89 +557,41 @@ def customBug(startyear, startmonth, endyear, endmonth):
 
 
 
-if __name__ == "__main__":
-    while True:
-        print('-**************-')
-        print('1.导出所有BUG')
-        print('2.导出自定义日期BUG')
-        try:
-            select = int(input('请选择：'))
-        except Exception:
-            print('无效输入')
-        if select == 1:
-            # 调用张尧的老方法
-            regular()
-            break
-        if select == 2:
-            startyear = int(input('输入开始年：').strip())
+def untriggerupdate(startyear, startmonth, endyear, endmonth):
+    startime = str(startyear) + str(startmonth)
+    endtime = str(endyear) + str(endmonth)
+    backupath = os.getcwd() + '\\backup.xlsx'
+    backexcel = xlrd.open_workbook(backupath)
+    table = backexcel.sheets()[0]
+    finalrowdata = table.row_values(-1)
+    this_date = datetime.datetime.strptime(re.findall(r'B*(\d+)-', finalrowdata[0])[0], "%y%m%d")
+    year, week, day = this_date.isocalendar()
+    date = this_date.strftime("%Y-%m-%d")  # 2020-05-20
+    finalyear = year
+    finalmonth = date.split('-')[1]
+    print('执行筛选操作,删除旧表，生成新表中...')
+    for xlsfile in os.listdir(os.getcwd()):
+        if '.xls' in xlsfile:
+            if 'BugCounter' in xlsfile:
+                os.remove(os.path.join(os.getcwd(), xlsfile))
+    tempalldata = [['issuekey', 'status', 'memo', 'title']]
+    for i in range(1, table.nrows):
+        rowdata = table.row_values(i)
+        bugdate = datetime.datetime.strptime(re.findall(r'B*(\d+)-', rowdata[0])[0], "%y%m%d")
+        bugyear, week, day = bugdate.isocalendar()
+        bugmonth = bugdate.month
+        realbugdate = int(str(bugyear) + str(bugmonth))
+        # 这一步筛选满足日期条件的行信息
+        if realbugdate <= int(endtime) and realbugdate >= int(startime):
+            tempalldata.append(rowdata)
 
-            startmonth = int(input('输入开始月：').strip())
-            endyear = int(input('输入结束年：').strip())
-            endmonth = int(input('输入结束月:').strip())
-            customBug(startyear, startmonth, endyear, endmonth)
-            break
-        else:
-            print('无效输入')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# -------------------------------------------------------------------------------------------
-
-
-
-
-
-def merge_Excel1():
-    # 定义要合并的excel文件列表
-    allxls = [os.getcwd() + '\\backup.xlsx', os.getcwd() + '\\iceberg.xls', os.getcwd() + '\\RomDevTest.xls']
-    # 存储所有读取的结果
-    alldata = [['issuekey', 'status', 'memo', 'title']]
-    for fl in allxls:
-        if os.path.exists(fl):
-            fh = open_xls(fl)
-            x = getshnum(fh)
-            for shnum in range(x):
-                print("正在读取文件：" + str(fl) + "的第" + str(shnum) + "个sheet表的内容...")
-                # alldata = getFilect(fl, shnum,alldata)
-                table = fh.sheets()[shnum]
-                num = table.nrows
-                for row in range(1, num, 1):
-                    rdata = table.row_values(row)
-                    if rdata not in alldata:
-                        alldata.append(rdata)
-                    # else:
-                    #     print('去重数据')
-                    #     print(rdata)
-        else:
-            if 'backup.xlsx' in fl:
-                pass
-            else:
-                print(fl)
-                input('本地文件不存在请检查,按任意键退出')
-                exit()
-    # 定义最终合并后生成的新文件
     now_date = datetime.datetime.now().strftime('%Y-%m-%d')
     endfile = os.getcwd() + '\\BugCounter-{}.xlsx'.format(now_date)
-    backfile = os.getcwd() + '\\backup.xlsx'.format(now_date)
-    wbback = xlsxwriter.Workbook(backfile)
-    wsback = wbback.add_worksheet('旧BUG数据缓存')
 
+    tempbackfile = os.getcwd() + '\\tempbackup.xlsx'.format(now_date)
+    wbback = xlsxwriter.Workbook(tempbackfile)
+    wsback = wbback.add_worksheet('临时BUG数据缓存')
     wb1 = xlsxwriter.Workbook(endfile)
-
     # 样式1
     # style1 = wb1.add_format({'bold': True, 'border': 1, 'border_color': 'black'})
     style1 = wb1.add_format({'border': 1, 'border_color': 'black'})
@@ -631,9 +614,9 @@ def merge_Excel1():
     ws.set_column('C:C', 20)
     ws.set_column('D:D', 40)
     ws.set_column('E:E', 12)
-    for a in range(len(alldata)):
-        for b in range(len(alldata[a])):
-            c = alldata[a][b]
+    for a in range(len(tempalldata)):
+        for b in range(len(tempalldata[a])):
+            c = tempalldata[a][b]
             ws.write(a, b, c)
             if b == 0 and c.lower() != 'issuekey':
                 try:
@@ -673,7 +656,7 @@ def merge_Excel1():
     for col in range(len(bugtitle)):
         wsbug.write(0, col, bugtitle[col], style2)
 
-    datetable, bugcount, bugcountdate = countdata(alldata)
+    datetable, bugcount, bugcountdate = countdata(tempalldata)
 
     bugcountdatekeys = list(bugcountdate.keys())
     alist = ['base', 'moudle', 'ROMDEVTEST', 'cream', 'maoyan', 'app', 'other']
@@ -710,6 +693,7 @@ def merge_Excel1():
     # wsbug.write(8*len(bugcountdatekeys)+1, 7, r'=SUMPRODUCT((MOD(ROW(H2:H{}),8)=1)*H2:H{})'.format(str(8*len(bugcountdatekeys)), str(8*len(bugcountdatekeys))), style1)
     # wsbug.write(8*len(bugcountdatekeys)+1, 8, r'=SUMPRODUCT((MOD(ROW(I2:I{}),8)=1)*I2:I{})'.format(str(8*len(bugcountdatekeys)), str(8*len(bugcountdatekeys))), style1)
     # wsbug.write(8*len(bugcountdatekeys)+1, 9, r'=SUMPRODUCT((MOD(ROW(J2:J{}),8)=1)*J2:J{})'.format(str(8*len(bugcountdatekeys)), str(8*len(bugcountdatekeys))), style1)
+
     for row in range(len(col6)):
         wsdata.write(row + 1, 6, col6[row], style1)
     wsdata.write(1, 7, bugcount['ISSUE_NOTDO'], style1)  # 不作处理
@@ -720,18 +704,21 @@ def merge_Excel1():
     wsdata.write(6, 7, bugcount['ISSUE_REOPENED'], style1)  # 重新打开
     wsdata.write(7, 7, bugcount['ISSUE_DELAYDO'], style1)  # 延后处理
     wsdata.write(8, 7, bugcount['ISSUE_RETURN_REWRITE'], style1)  # 退回
+    # 这一层循环，写入tempbackup 和BugCounter的所有满足条件的bug
     for a in range(len(datetable)):
         for b in range(len(datetable[a])):
             c = datetable[a][b]
             wsdata.write(a + 1, b, c, style1)
     # --------2、生成图表并插入到excel---------------
+
     # 创建一个折线图(line chart)
     chart_col = wb1.add_chart({'type': 'line'})
     # 配置第一个系列数据
+    datetablelen = len(datetable)
     if len(datetable) > 20:
         getcol = len(datetable) + 1 - 20
     else:
-        getcol = 0
+        getcol = 1
     chart_col.add_series({
         # 这里的sheet1是默认的值，因为我们在新建sheet时没有指定sheet名
         # 如果我们新建sheet时设置了sheet名，这里就要设置成相应的值
@@ -785,7 +772,8 @@ def merge_Excel1():
         #     {'fill': {'color': 'yellow'}},
         #     {'fill': {'color': 'gray'}},
         # ],
-        'data_labels': {'value': True, 'percentage': True, 'leader_lines': True, 'legend_key': True, 'category': True},
+        'data_labels': {'value': True, 'percentage': True, 'leader_lines': True, 'legend_key': True,
+                        'category': True},
     })
     # 设置图表的大小
     chart_pie.set_size({'height': 500})
@@ -817,4 +805,72 @@ def merge_Excel1():
     filepath = os.path.join(os.getcwd(), 'BugCounter-{}.xlsx'.format(now_date))
     cmd = '"{}"'.format(filepath)
     cmddoing = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    Result = cmddoing.stdout.read()
+
+
+
+def guimode():
+    win = tkinter.Tk()
+    win.wm_attributes('-topmost', 1)
+    win.title("Bug 日期选择")  # #窗口标题
+    win.geometry("450x200+500+300")
+    startyearxVariable = tkinter.StringVar()  # #创建变量，便于取值
+    staryearcom = ttk.Combobox(win, textvariable=startyearxVariable)  # #创建下拉菜单
+    staryearcom.grid(row=1,column=1,padx=30,pady=30)
+    staryearcom["value"] = (['起始年:'+str(y) for y in range(2016,int(datetime.datetime.now().year)+1)])
+    staryearcom.current(0)
+
+    startmonthxVariable = tkinter.StringVar()
+    starmonth = ttk.Combobox(win, textvariable=startmonthxVariable)  # #创建下拉菜单
+    starmonth.grid(row=2,column=1)
+    starmonth["value"] = (['起始月:'+str(y) for y in range(1, 13)])
+    starmonth.current(0)
+
+
+    endyearxVariable = tkinter.StringVar()  # #创建变量，便于取值
+    staryearcom = ttk.Combobox(win, textvariable=endyearxVariable)  # #创建下拉菜单
+    staryearcom.grid(row=1,column=2)
+    staryearcom["value"] = (['结束年:'+str(y) for y in range(2016,int(datetime.datetime.now().year)+1)])
+    staryearcom.current(0)
+
+    endmonthxVariable = tkinter.StringVar()
+    starmonth = ttk.Combobox(win, textvariable=endmonthxVariable)  # #创建下拉菜单
+    starmonth.grid(row=2,column=2)
+    starmonth["value"] = (['结束月:'+str(y) for y in range(1, 13)])
+    starmonth.current(0)
+
+    sbtn=ttk.Button(win,text="开始查询")
+    sbtn.grid(row=3,column=1,padx=0,pady=20,columnspan=2)
+
+
+    win.mainloop()
+
+
+
+if __name__ == "__main__":
+    while True:
+        print('-**************-')
+        print('1.导出所有BUG')
+        print('2.导出自定义日期BUG')
+        try:
+            select = int(input('请选择：'))
+        except Exception:
+            print('无效输入')
+        if select == 1:
+            # 调用张尧的老方法
+            regular()
+            break
+        if select == 2:
+            guimode()
+            # startyear = int(input('输入开始年：').strip())
+            #
+            # startmonth = int(input('输入开始月：').strip())
+            # endyear = int(input('输入结束年：').strip())
+            # endmonth = int(input('输入结束月:').strip())
+            # customBug(startyear, startmonth, endyear, endmonth)
+            break
+        else:
+            print('无效输入')
+
+
+
+
