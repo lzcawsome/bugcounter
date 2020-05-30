@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import subprocess
+import threading
 import time
 import datetime
 import socket, sys
@@ -142,16 +143,7 @@ def countdata(alldata):
     # ISSUE_DELAYDO  # 延后处理
     # ISSUE_RETURN_REWRITE  # 退回
 
-    # 实际上{
-    # ISSUE_CLOSED：不做处理,
-    # ISSUE_DELAYDO:关闭，
-    # ISSUE_INPROGRESS：解决等待关闭，
-    # ISSUE_NOTDO：新的，
-    # ISSUE_OPEN：正在处理，
-    # ISSUE_REOPENED：不清楚，
-    # ISSUE_RESOLVED：延后处理，
-    # ISSUE_RETURN_REWRITE：退回
-    # }
+
     allbugcount = {'ISSUE_CLOSED': 0, 'ISSUE_DELAYDO': 0, 'ISSUE_INPROGRESS': 0, 'ISSUE_NOTDO': 0, 'ISSUE_OPEN': 0,
                    'ISSUE_REOPENED': 0, 'ISSUE_RESOLVED': 0, 'ISSUE_RETURN_REWRITE': 0}
     # bugcount = {}  # {年：{周：[buglist]}}
@@ -529,37 +521,52 @@ def regular():
 
 # this_date = datetime.datetime.strptime(re.findall(r'B*(\d+)-', c)[0], "%y%m%d")
 # year, week, day = this_date.isocalendar()
-def customBug(startyear, startmonth, endyear, endmonth):
-    startime = str(startyear) + str(startmonth)
-    endtime = str(endyear) + str(endmonth)
-    backupath = os.getcwd() + '\\backup.xlsx'
-    backexcel = xlrd.open_workbook(backupath)
-    table = backexcel.sheets()[0]
-    finalrowdata = table.row_values(-1)
-    this_date = datetime.datetime.strptime(re.findall(r'B*(\d+)-', finalrowdata[0])[0], "%y%m%d")
-    year, week, day = this_date.isocalendar()
-    date = this_date.strftime("%Y-%m-%d")  # 2020-05-20
-    finalyear = year
-    finalmonth = date.split('-')[1]
+def customBug(startyear, startmonth, endyear, endmonth,sbtn,win):
+    sbtn.config(state=tkinter.DISABLED)
+    thread_num = threading.active_count()
+    print(thread_num)
+    if thread_num<=5:
+        if startyear=='':
+            startyear='2016'
+        if startmonth=='':
+            startmonth='1'
+        if endyear=='':
+            endyear='2016'
+        if endmonth=='':
+            endmonth='1'
+        print('正在在查询，请稍后....')
+        startime = str(startyear) + str(startmonth)
+        endtime = str(endyear) + str(endmonth)
+        backupath = os.getcwd() + '\\backup.xlsx'
+        backexcel = xlrd.open_workbook(backupath)
+        table = backexcel.sheets()[0]
+        finalrowdata = table.row_values(-1)
+        this_date = datetime.datetime.strptime(re.findall(r'B*(\d+)-', finalrowdata[0])[0], "%y%m%d")
+        year, week, day = this_date.isocalendar()
+        date = this_date.strftime("%Y-%m-%d")  # 2020-05-20
+        finalyear = year
+        finalmonth = date.split('-')[1]
 
-    # 询问用户是否原因触发更新
-    if int(endyear) >= int(finalyear) and int(endmonth) >= int(finalmonth):
-        pass
-    #     print('执行更新合并筛选操作')
+        # 询问用户是否原因触发更新
+        if int(endyear) >= int(finalyear) and int(endmonth) >= int(finalmonth):
+            pass
+        #     print('执行更新合并筛选操作')
 
-    # 不触发更新
-    elif int(endyear) <= int(finalyear):
-        untriggerupdate(startyear, startmonth, endyear, endmonth)
+        # 不触发更新
+        elif int(endyear) <= int(finalyear):
+            untriggerupdate(startyear, startmonth, endyear, endmonth)
 
+        else:
+            print('无效输入，请检查日期是否输入正确！')
     else:
-        print('无效输入，请检查日期是否输入正确！')
-
+        print('请勿重负点击！')
+    win.destroy()
 
 
 
 def untriggerupdate(startyear, startmonth, endyear, endmonth):
-    startime = str(startyear) + str(startmonth)
-    endtime = str(endyear) + str(endmonth)
+    startime = str(int(startyear)*10000+int(startmonth)*100)
+    endtime = str(int(endyear)*10000+int(endmonth)*100)
     backupath = os.getcwd() + '\\backup.xlsx'
     backexcel = xlrd.open_workbook(backupath)
     table = backexcel.sheets()[0]
@@ -580,7 +587,7 @@ def untriggerupdate(startyear, startmonth, endyear, endmonth):
         bugdate = datetime.datetime.strptime(re.findall(r'B*(\d+)-', rowdata[0])[0], "%y%m%d")
         bugyear, week, day = bugdate.isocalendar()
         bugmonth = bugdate.month
-        realbugdate = int(str(bugyear) + str(bugmonth))
+        realbugdate = int(bugyear)*10000+int(bugmonth)*100
         # 这一步筛选满足日期条件的行信息
         if realbugdate <= int(endtime) and realbugdate >= int(startime):
             tempalldata.append(rowdata)
@@ -799,7 +806,7 @@ def untriggerupdate(startyear, startmonth, endyear, endmonth):
 
     wb1.close()
     print("图表已生成完毕")
-    input('数据已保存到:' + os.getcwd() + '\\BugCounter-{}.xlsx'.format(now_date) + '\n请按任意键退出并打开表格')
+    input('数据已保存到:' + os.getcwd() + '\\BugCounter-{}.xlsx'.format(now_date) + '\n请按任意键退出并打开表格:')
     # os.system('start "{}"'.format(os.getcwd() + '\\BugCounter-{}.xlsx'.format(now_date)))
     # 用subprocess打开excel
     filepath = os.path.join(os.getcwd(), 'BugCounter-{}.xlsx'.format(now_date))
@@ -807,39 +814,73 @@ def untriggerupdate(startyear, startmonth, endyear, endmonth):
     cmddoing = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
+#自定义的线程函数类
+def thread_it(func, *args):
+  '''将函数放入线程中执行'''
+  # 创建线程
+  t = threading.Thread(target=func, args=args)
+  # 守护线程
+  t.setDaemon(True)
+  # 启动线程
+  t.start()
 
+sy=''
+sm=''
+ey=''
+em=''
 def guimode():
     win = tkinter.Tk()
     win.wm_attributes('-topmost', 1)
     win.title("Bug 日期选择")  # #窗口标题
     win.geometry("450x200+500+300")
+
+    def bindsy(*args):
+        global sy
+        sy=str(staryearcom.get()).split(':')[1]
     startyearxVariable = tkinter.StringVar()  # #创建变量，便于取值
-    staryearcom = ttk.Combobox(win, textvariable=startyearxVariable)  # #创建下拉菜单
+    staryearcom = ttk.Combobox(win, textvariable=startyearxVariable,state="readonly")  # #创建下拉菜单
     staryearcom.grid(row=1,column=1,padx=30,pady=30)
     staryearcom["value"] = (['起始年:'+str(y) for y in range(2016,int(datetime.datetime.now().year)+1)])
     staryearcom.current(0)
+    staryearcom.bind("<<ComboboxSelected>>", bindsy)
 
+    def bindsm(*args):
+        global sm
+        sm = str(starmonthcom.get()).split(':')[1]
     startmonthxVariable = tkinter.StringVar()
-    starmonth = ttk.Combobox(win, textvariable=startmonthxVariable)  # #创建下拉菜单
-    starmonth.grid(row=2,column=1)
-    starmonth["value"] = (['起始月:'+str(y) for y in range(1, 13)])
-    starmonth.current(0)
+    starmonthcom = ttk.Combobox(win,textvariable=startmonthxVariable,state="readonly")  # #创建下拉菜单
+    starmonthcom.grid(row=2,column=1)
+    starmonthcom["value"] = (['起始月:'+str(y) for y in range(1, 13)])
+    starmonthcom.current(0)
+    starmonthcom.bind("<<ComboboxSelected>>", bindsm)
 
-
+    def bindey(*args):
+        global ey
+        ey = str(endyearcom.get()).split(':')[1]
     endyearxVariable = tkinter.StringVar()  # #创建变量，便于取值
-    staryearcom = ttk.Combobox(win, textvariable=endyearxVariable)  # #创建下拉菜单
-    staryearcom.grid(row=1,column=2)
-    staryearcom["value"] = (['结束年:'+str(y) for y in range(2016,int(datetime.datetime.now().year)+1)])
-    staryearcom.current(0)
+    endyearcom = ttk.Combobox(win, textvariable=endyearxVariable,state="readonly")  # #创建下拉菜单
+    endyearcom.grid(row=1,column=2)
+    endyearcom["value"] = (['结束年:'+str(y) for y in range(2016,int(datetime.datetime.now().year)+1)])
+    endyearcom.current(0)
+    endyearcom.bind("<<ComboboxSelected>>",bindey)
 
+
+    def bindem(*args):
+        global em
+        em=str(endmonthcom.get()).split(':')[1]
     endmonthxVariable = tkinter.StringVar()
-    starmonth = ttk.Combobox(win, textvariable=endmonthxVariable)  # #创建下拉菜单
-    starmonth.grid(row=2,column=2)
-    starmonth["value"] = (['结束月:'+str(y) for y in range(1, 13)])
-    starmonth.current(0)
+    endmonthcom = ttk.Combobox(win, textvariable=endmonthxVariable,state="readonly")  # #创建下拉菜单
+    endmonthcom.grid(row=2,column=2)
+    endmonthcom["value"] = (['结束月:'+str(y) for y in range(1, 13)])
+    endmonthcom.current(0)
+    endmonthcom.bind("<<ComboboxSelected>>",bindem)
 
-    sbtn=ttk.Button(win,text="开始查询")
+#执行耗时操作新开一个线程
+    sbtn=ttk.Button(win,text="开始查询",command=lambda :thread_it(customBug, sy,sm,ey,em,sbtn,win))
+#这个是单线程模式 ，会报anr
+    # sbtn = ttk.Button(win, text="开始查询", command=lambda: customBug(sy, sm, ey, em))
     sbtn.grid(row=3,column=1,padx=0,pady=20,columnspan=2)
+
 
 
     win.mainloop()
@@ -861,13 +902,14 @@ if __name__ == "__main__":
             break
         if select == 2:
             guimode()
+            break
             # startyear = int(input('输入开始年：').strip())
             #
             # startmonth = int(input('输入开始月：').strip())
             # endyear = int(input('输入结束年：').strip())
             # endmonth = int(input('输入结束月:').strip())
             # customBug(startyear, startmonth, endyear, endmonth)
-            break
+
         else:
             print('无效输入')
 
